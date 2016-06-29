@@ -34,6 +34,10 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 		vb.customize [ "modifyvm", :id, "--memory", "2048", "--cpus", "2" ]
 	end
 
+	# Network & Misc Configurations
+    cephaio.vm.network :private_network, ip: "172.16.10.10"
+    cephaio.vm.hostname = "cephaio"
+
 	# Set proxy
 	if Vagrant.has_plugin?("vagrant-proxyconf")
 		config.proxy.http = (ENV['http_proxy']||ENV['HTTP_PROXY'])
@@ -41,10 +45,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 		config.proxy.no_proxy =  (ENV['no_proxy']+",172.16.10.10" || ENV['NO_PROXY']+",172.16.10.10" || 'localhost,127.0.0.1,172.16.10.10')
 	end
 
-    cephaio.vm.network :private_network, ip: "172.16.10.10"
-    cephaio.vm.hostname = "cephaio"
-
-	cephaio.vm.synced_folder "#{ceph_src_dir}", "#{ceph_src_dir}", type: 'nfs'
+	# Sync ceph source dir
+    cephaio.vm.synced_folder "#{ceph_src_dir}", "#{ceph_src_dir}", type: 'nfs'
 
 #############################################################
 # PROVISIONING OF THE VM
