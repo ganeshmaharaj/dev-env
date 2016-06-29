@@ -4,6 +4,12 @@ Ceph Dev Testing VM
 
 A simple vagrant script to run 'vstart.sh' from ceph source compiled on host
 
+Host Changes
+============
+Script uses NFS mounting of the ceph source directory to guest.
+Install ``nfs-common`` and ``nfs-kernel-server`` in ubuntu or the
+equivalent packages in other distributions
+
 Configurations
 ==============
 
