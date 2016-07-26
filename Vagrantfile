@@ -56,7 +56,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 	config.vm.provision "shell", inline: <<-SHELL
 	  sudo apt-get update
 	  curl https://bootstrap.pypa.io/get-pip.py | sudo python -
-	  sudo apt-get install -y g++ git libboost-thread1.54.0 libboost-thread1.54-dev libboost-all-dev libboost-random1.54.0 libnss3 libnss3-dev libnspr4 libleveldb1 libleveldb-dev libsnappy1 libsnappy-dev libgoogle-perftools-dev libaio1 libaio-dev libatomic-ops-dev valgrind liblttng-ust-dev libfuse-dev xfslibs-dev libblkid-dev libfcgi-dev libkeyutils-dev libudev-dev libbabeltrace-dev libbabeltrace-ctf-dev libcurl4-openssl-dev
+	  sudo apt-get install -y g++ git libboost-thread1.54.0 libboost-thread1.54-dev libboost-all-dev libboost-random1.54.0 libnss3 libnss3-dev libnspr4 libleveldb1 libleveldb-dev libsnappy1 libsnappy-dev libgoogle-perftools-dev libaio1 libaio-dev libatomic-ops-dev valgrind liblttng-ust-dev libfuse-dev xfslibs-dev libblkid-dev libfcgi-dev libkeyutils-dev libudev-dev libbabeltrace-dev libbabeltrace-ctf-dev libcurl4-openssl-dev cmake
 	  #sudo apt-get install -y libcurl4-gnutls-dev
 	  sudo pip install Cython
 	SHELL
