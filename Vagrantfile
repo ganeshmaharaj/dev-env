@@ -55,10 +55,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 	# Install packages
 	config.vm.provision "shell", inline: <<-SHELL
 	  sudo apt-get update
-	  curl https://bootstrap.pypa.io/get-pip.py | sudo python -
-	  sudo apt-get install -y g++ git libboost-thread1.54.0 libboost-thread1.54-dev libboost-all-dev libboost-random1.54.0 libnss3 libnss3-dev libnspr4 libleveldb1 libleveldb-dev libsnappy1 libsnappy-dev libgoogle-perftools-dev libaio1 libaio-dev libatomic-ops-dev valgrind liblttng-ust-dev libfuse-dev xfslibs-dev libblkid-dev libfcgi-dev libkeyutils-dev libudev-dev libbabeltrace-dev libbabeltrace-ctf-dev libcurl4-openssl-dev cmake
-	  #sudo apt-get install -y libcurl4-gnutls-dev
-	  sudo pip install Cython
+	  cd #{ceph_src_dir}
+	  ./install-deps.sh
 	SHELL
 
 	# Prepare disk for use with ceph
@@ -73,12 +71,12 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
 	# Run ceph
 	if File.directory?(File.expand_path("#{ceph_src_dir}/build"))
-	    config.vm.provision "shell", inline: <<-SHELL
+	    config.vm.provision "shell", privileged: false, inline: <<-SHELL
 	      cd #{ceph_src_dir}/build
 	      #{ceph_mon} #{ceph_mds} #{ceph_osd} CEPH_DEV_DIR=/data/ceph-disk #{ceph_src_dir}/src/vstart.sh -d -n -x
 	    SHELL
 	else
-	    config.vm.provision "shell", inline: <<-SHELL
+	    config.vm.provision "shell", privileged: false, inline: <<-SHELL
 	      cd #{ceph_src_dir}/src
 	      #{ceph_mon} #{ceph_mds} #{ceph_osd} CEPH_DEV_DIR=/data/ceph-disk #{ceph_src_dir}/src/vstart.sh -d -n -x
 	    SHELL
