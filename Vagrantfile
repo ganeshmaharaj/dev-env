@@ -9,7 +9,7 @@ d = 1
 ceph_src_dir = ENV['CEPH_SRC_DIR'] || "#{File.dirname(__dir__)}/ceph"
 ENV['CEPH_MON'] ? ceph_mon = "MON=#{ENV['CEPH_MON']}" : ceph_mon = ""
 ENV['CEPH_MDS'] ? ceph_mds = "MDS=#{ENV['CEPH_MDS']}" : ceph_mds = ""
-ENV['CEPH_OSD'] ? ceph_osd = "MDS=#{ENV['CEPH_OSD']}" : ceph_osd = ""
+ENV['CEPH_OSD'] ? ceph_osd = "OSD=#{ENV['CEPH_OSD']}" : ceph_osd = ""
 
 # Needed maybe?
 # required_plugins = %w( vagrant-proxyconf )
