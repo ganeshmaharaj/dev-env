@@ -57,6 +57,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 	  sudo apt-get update
 	  cd #{ceph_src_dir}
 	  ./install-deps.sh
+	  sudo apt-get install -y lttng-tools libbabeltrace-ctf-dev libbabeltrace-dev libbabeltrace-ctf1 liblttng-ust-dev
 	SHELL
 
 	# Prepare disk for use with ceph
