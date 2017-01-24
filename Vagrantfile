@@ -16,6 +16,7 @@ ENV['CEPH_OSD'] ? ceph_osd = "OSD=#{ENV['CEPH_OSD']}" : ceph_osd = ""
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.box = "ubuntu/trusty64"
+#  config.vm.box = "fedora/24-cloud-base"
 
   # Install plugins that you might need.
   if ENV['http_proxy'] || ENV['HTTP_PROXY']
@@ -25,6 +26,9 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.define :cephaio do |cephaio|
     cephaio.vm.provider :virtualbox do |vb|
 		vb.customize [ "createhd", "--filename", "disk-#{d}", "--size", "1000" ]
+# 		vb.customize ["storagectl", :id,
+# 				      "--name", "SATA Controller",
+# 					  "--add", "sata" ]
 		vb.customize [ "storageattach", :id,
 				       "--storagectl", "SATAController",
 					   "--port", 3 + d,
@@ -54,7 +58,9 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
 	# Install packages
 	config.vm.provision "shell", inline: <<-SHELL
+	  # sudo add-apt-repository -y ppa:lttng/ppa
 	  sudo apt-get update
+	  # sudo dnf update
 	  cd #{ceph_src_dir}
 	  ./install-deps.sh
 	  sudo apt-get install -y lttng-tools libbabeltrace-ctf-dev libbabeltrace-dev libbabeltrace-ctf1 liblttng-ust-dev
