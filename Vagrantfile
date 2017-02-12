@@ -25,17 +25,19 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
   config.vm.define :cephaio do |cephaio|
     cephaio.vm.provider :virtualbox do |vb|
-		vb.customize [ "createhd", "--filename", "disk-#{d}", "--size", "1000" ]
+		vb.customize [ "modifyvm", :id, "--memory", "2048", "--cpus", "2" ]
+		(1..d).each do |i|
+			vb.customize [ "createhd", "--filename", "disk-#{i}", "--size", "1000" ]
 # 		vb.customize ["storagectl", :id,
 # 				      "--name", "SATA Controller",
 # 					  "--add", "sata" ]
-		vb.customize [ "storageattach", :id,
-				       "--storagectl", "SATAController",
-					   "--port", 3 + d,
-					   "--device", 0,
-					   "--type", "hdd",
-					   "--medium", "disk-#{d}.vdi" ]
-		vb.customize [ "modifyvm", :id, "--memory", "2048", "--cpus", "2" ]
+			vb.customize [ "storageattach", :id,
+			               "--storagectl", "SATAController",
+			               "--port", 3 + i,
+			               "--device", 0,
+			               "--type", "hdd",
+			               "--medium", "disk-#{i}.vdi" ]
+			end
 	end
 
 	# Network & Misc Configurations
@@ -63,7 +65,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 	  # sudo dnf update
 	  cd #{ceph_src_dir}
 	  ./install-deps.sh
-	  sudo apt-get install -y lttng-tools libbabeltrace-ctf-dev libbabeltrace-dev libbabeltrace-ctf1 liblttng-ust-dev
+	  # sudo apt-get install -y lttng-tools libbabeltrace-ctf-dev libbabeltrace-dev libbabeltrace-ctf1 liblttng-ust-dev
 	SHELL
 
 	# Prepare disk for use with ceph
