@@ -8,10 +8,10 @@ CONT_NAME=""
 CONT_ARGS=""
 DBG=false
 declare -a DBG_ARGS
-CEPH_EXTRA_CMAKE_ARGS='-DWITH_LTTNG=ON -DHAVE_BABELTRACE=ON -DWITH_EVENTTRACE=ON -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_FLAGS="-O0 -g3 -gdwarf-4 -ggd"'
-DEB_BUILD_OPTIONS='nostrip noopt debug'
-G_USER="$(git config user.name)"
-G_EMAIL="$(git config user.email)"
+CEPH_EXTRA_CMAKE_ARGS="-DWITH_LTTNG=ON -DHAVE_BABELTRACE=ON -DWITH_EVENTTRACE=ON -DCMAKE_BUILD_TYPE=Debug"
+# Unable to get RPM to handle args with spaces and quotes. need to figure that out
+#CEPH_EXTRA_CMAKE_ARGS="-DWITH_LTTNG=ON -DHAVE_BABELTRACE=ON -DWITH_EVENTTRACE=ON -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_FLAGS='"'-O0 -g3 -gdwarf-4 -ggdb'"'"
+DEB_BUILD_OPTIONS="nostrip noopt debug"
 
 function usage()
 {
@@ -62,8 +62,8 @@ function populate_stuff()
 	then
 		echo "Proxy detected. Will be set for containers"
 		CONT_ARGS+="-e http_proxy=${http_proxy} \
-					-e https_proxy=${https_proxy} \
-					-e no_proxy=${no_proxy} "
+			-e https_proxy=${https_proxy} \
+			-e no_proxy=${no_proxy} "
 	fi
 
 	echo "Source ${SRC} will be mounted at /data/ceph-src"
@@ -78,11 +78,10 @@ function deb_release()
 
 	# Set things unique to these systems
 	if ${DBG}; then
-		DBG_ARGS+=("-e DEB_BUILD_OPTIONS=${DEB_BUILD_OPTIONS} -e CEPH_EXTRA_CMAKE_ARGS=${CEPH_EXTRA_CMAKE_ARGS} ")
+		DBG_ARGS+=(-e DEB_BUILD_OPTIONS=${DEB_BUILD_OPTIONS} -e CEPH_EXTRA_CMAKE_ARGS=${CEPH_EXTRA_CMAKE_ARGS})
 	fi
 
 	# Start Container
-	echo docker run -it -d ${CONT_ARGS} "${DBG_ARGS[@]}" ${REL} bash
 	docker run -it -d ${CONT_ARGS} "${DBG_ARGS[@]}" ${REL} bash
 
 	# Setup packages for building
@@ -93,7 +92,8 @@ function deb_release()
 
 	# Start making the build
 	docker exec -it ${CONT_NAME} bash -c \
-		'/data/ceph-src/make-debs.sh /data/ceph-dest/ \
+		'cd /data/ceph-src; \
+		/data/ceph-src/make-debs.sh /data/ceph-dest/ \
 		2>&1 | tee /data/ceph-dest/build.log'
 }
 
@@ -103,18 +103,17 @@ function rpm_release()
 
 	# Set things unique to these systems
 	if ${DBG}; then
-		DBG_ARGS+=("-e CEPH_EXTRA_CMAKE_ARGS=${CEPH_EXTRA_CMAKE_ARGS} ")
+		DBG_ARGS+=(-e CEPH_EXTRA_CMAKE_ARGS=${CEPH_EXTRA_CMAKE_ARGS})
 	fi
 
 	# Start Container
-	echo docker run -it -d ${CONT_ARGS} "${DBG_ARGS[@]}" ${REL} bash
 	docker run -it -d ${CONT_ARGS} "${DBG_ARGS[@]}" ${REL} bash
 
 	# Set some config for rpm build
 	docker exec -it ${CONT_NAME} bash -c \
 		'echo "%_topdir /data/ceph-dest" >> ~/.rpmmacros'
 	docker exec -it ${CONT_NAME} bash -c \
-		"echo '%packager ${G_USER} <${G_EMAIL}>' \
+		"echo '%packager $(git config user.name) <$(git config user.email)>' \
 		>> ~/.rpmmacros" || { echo \
 		'Unable to find user details. Going with standard'; \
 		continue; }
