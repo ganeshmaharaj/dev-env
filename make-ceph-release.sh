@@ -153,6 +153,8 @@ else
 	rpm_release
 fi
 
-# Always clean container at the end.
-docker stop ${CONT_NAME}
-docker rm ${CONT_NAME}
+# Always clean container at the end (only if things work fine).
+if [ $? -eq 0 ]; then
+	docker stop ${CONT_NAME}
+	docker rm ${CONT_NAME}
+fi
