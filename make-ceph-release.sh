@@ -11,7 +11,8 @@ declare -a DBG_ARGS
 CEPH_EXTRA_CMAKE_ARGS="-DWITH_LTTNG=ON -DHAVE_BABELTRACE=ON -DWITH_EVENTTRACE=ON -DCMAKE_BUILD_TYPE=Debug"
 # Unable to get RPM to handle args with spaces and quotes. need to figure that out
 #CEPH_EXTRA_CMAKE_ARGS="-DWITH_LTTNG=ON -DHAVE_BABELTRACE=ON -DWITH_EVENTTRACE=ON -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_FLAGS='"'-O0 -g3 -gdwarf-4 -ggdb'"'"
-DEB_BUILD_OPTIONS="nostrip noopt debug"
+# Not using deb build options for now. This was causing a crash in bluestore. http://tracker.ceph.com/issues/19039
+#DEB_BUILD_OPTIONS="nostrip noopt debug"
 
 function usage()
 {
@@ -78,7 +79,7 @@ function deb_release()
 
 	# Set things unique to these systems
 	if ${DBG}; then
-		DBG_ARGS+=(-e DEB_BUILD_OPTIONS=${DEB_BUILD_OPTIONS} -e CEPH_EXTRA_CMAKE_ARGS=${CEPH_EXTRA_CMAKE_ARGS})
+		DBG_ARGS+=(-e CEPH_EXTRA_CMAKE_ARGS=${CEPH_EXTRA_CMAKE_ARGS})
 	fi
 
 	# Start Container
