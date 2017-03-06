@@ -8,7 +8,7 @@ CONT_NAME=""
 CONT_ARGS=""
 DBG=false
 declare -a DBG_ARGS
-CEPH_EXTRA_CMAKE_ARGS="-DWITH_LTTNG=ON -DHAVE_BABELTRACE=ON -DWITH_EVENTTRACE=ON -DCMAKE_BUILD_TYPE=Debug"
+CEPH_EXTRA_CMAKE_ARGS+=" -DWITH_LTTNG=ON -DHAVE_BABELTRACE=ON -DWITH_EVENTTRACE=ON -DCMAKE_BUILD_TYPE=Debug"
 # Unable to get RPM to handle args with spaces and quotes. need to figure that out
 #CEPH_EXTRA_CMAKE_ARGS="-DWITH_LTTNG=ON -DHAVE_BABELTRACE=ON -DWITH_EVENTTRACE=ON -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_FLAGS='"'-O0 -g3 -gdwarf-4 -ggdb'"'"
 # Not using deb build options for now. This was causing a crash in bluestore. http://tracker.ceph.com/issues/19039
@@ -76,6 +76,7 @@ function populate_stuff()
 function deb_release()
 {
 	echo "Starting build for ${REL}..."
+	echo "${CEPH_EXTRA_CMAKE_ARGS}"
 
 	# Set things unique to these systems
 	if ${DBG}; then
