@@ -90,13 +90,13 @@ function deb_release()
 	docker exec -it ${CONT_NAME} apt-get update
 	docker exec -it ${CONT_NAME} apt-get install --yes lsb-release reprepro
 	docker exec -it ${CONT_NAME} bash -c \
-		'cd /data/ceph-src; /data/ceph-src/install-deps.sh'
+		'cd /data/ceph-src; /data/ceph-src/install-deps.sh; exit $?'
 
 	# Start making the build
 	docker exec -it ${CONT_NAME} bash -c \
 		'cd /data/ceph-src; \
 		/data/ceph-src/make-debs.sh /data/ceph-dest/ \
-		2>&1 | tee /data/ceph-dest/build.log'
+		2>&1 | tee /data/ceph-dest/build.log; exit $?'
 }
 
 function rpm_release()
@@ -132,7 +132,7 @@ function rpm_release()
 	docker exec -it ${CONT_NAME} yum install --assumeyes \
 		git rpm-build rpmdevtools
 	docker exec -it ${CONT_NAME} bash -c \
-		'cd /data/ceph-src; /data/ceph-src/install-deps.sh'
+		'cd /data/ceph-src; /data/ceph-src/install-deps.sh; exit $?'
 
 	# Start building packages
 	docker exec -it ${CONT_NAME} bash -c \
@@ -142,7 +142,7 @@ function rpm_release()
 	docker exec -it ${CONT_NAME} bash -c \
 		'cd /data/ceph-src; \
 		rpmbuild --rebuild $(ls -1q /data/ceph-src/*.rpm) \
-		2>&1 | tee -a /data/ceph-dest/build.log'
+		2>&1 | tee -a /data/ceph-dest/build.log; exit $?'
 }
 
 # Lets go!!
