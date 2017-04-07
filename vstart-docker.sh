@@ -49,7 +49,7 @@ function populate_stuff()
 	# image for the build to avoid random issues.
 	OS=$(lsb_release -is) || (echo "Unable to run lsb_release"; exit 1)
 	REL=$(lsb_release -rs) || (echo "Unable to run lsb_release"; exit 1)
-	CONT_NAME="${OS}-${REL}-vstart"
+	CONT_NAME="${OS,,}-${REL}-vstart"
 	CONT_ARGS+=" --name ${CONT_NAME} "
 
 	# Find other env settings
@@ -69,9 +69,6 @@ function populate_stuff()
 
 	# Add source and ceph-disk as mounts to container
 	CONT_ARGS+="-v ${SRC}:${SRC} -v ${WD}/ceph-disk:/data/ceph-disk "
-
-	# Add the source patch as an env variable
-	CONT_ARGS+=" -e CEPH_SRC_PATH=${SRC} "
 }
 
 function run_container()
@@ -88,10 +85,20 @@ function run_container()
 	docker exec -it ${CONT_NAME} bash -c \
 		"cd ${SRC}; ${SRC}/install-deps.sh"
 
+	# Install additional packages since we almost always use them.
+	docker exec -it ${CONT_NAME} \
+		apt-get install -y libcrypto++*
+
 	# Run vstart
-	docker exec -it --user ${USER} ${CONT_NAME} bash -c \
-		"cd ${SRC}/build; \
-		CEPH_DEV_DIR=/data/ceph-disk ${SRC}/src/vstart.sh -d -n -x"
+	if [ -d "${SRC}/build" ]; then
+		docker exec -it --user ${USER} ${CONT_NAME} bash -c \
+			"cd ${SRC}/build; \
+			CEPH_DEV_DIR=/data/ceph-disk ${SRC}/src/vstart.sh -d -n -x"
+	else
+		docker exec -it --user ${USER} ${CONT_NAME} bash -c \
+			"cd ${SRC}/src; \
+			CEPH_DEV_DIR=/data/ceph-disk ${SRC}/src/vstart.sh -d -n -x"
+	fi
 }
 
 # No idea why this is not working. Figure it out
