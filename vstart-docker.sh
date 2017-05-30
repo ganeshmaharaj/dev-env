@@ -15,6 +15,8 @@ REL=""
 CONT_ARGS=""
 CONT_NAME=""
 WD=`pwd`
+DIMG=""
+DMOUNT=""
 
 function usage()
 {
@@ -42,14 +44,26 @@ if [ -z "${SRC}" ]; then
 	exit 1
 fi
 
+function clean_up()
+{
+	# Clean up fake drives and folder we created
+	echo "Cleaning up stuff"
+	sudo umount ${WD}/ceph-disk
+	rm -rf ${WD}/c-disk ${WD}/ceph-disk
+}
+trap clean_up ERR
+
 function populate_stuff()
 {
+	# Sanitize SRC data
+	SRC=${SRC%/}
+
 	# Find OS and release of the build machine. We are assuming that this is
 	# being run on the same machine code was built on and sticking to the same
 	# image for the build to avoid random issues.
 	OS=$(lsb_release -is) || (echo "Unable to run lsb_release"; exit 1)
 	REL=$(lsb_release -rs) || (echo "Unable to run lsb_release"; exit 1)
-	CONT_NAME="${OS,,}-${REL}-vstart"
+	CONT_NAME="${OS,,}-${REL}-vstart-${SRC##*/}"
 	CONT_ARGS+=" --name ${CONT_NAME} "
 
 	# Find other env settings
@@ -60,15 +74,18 @@ function populate_stuff()
 			-e no_proxy=${no_proxy} "
 	fi
 
+	DIMG="c-disk-${SRC##*/}"
+	DMOUNT="ceph-disk-${SRC##*/}"
+
 	# Setup disk for use as CEPH_DEV_DIR
-	truncate -s 1G ${WD}/c-disk
-	mkfs.xfs ${WD}/c-disk
-	mkdir -p ${WD}/ceph-disk
-	sudo mount -t xfs ${WD}/c-disk ${WD}/ceph-disk
-	sudo chmod 777 ${WD}/ceph-disk
+	truncate -s 1G ${WD}/${DIMG}
+	mkfs.xfs ${WD}/${DIMG}
+	mkdir -p ${WD}/${DMOUNT}
+	sudo mount -t xfs ${WD}/${DIMG} ${WD}/${DMOUNT}
+	sudo chmod 777 ${WD}/${DMOUNT}
 
 	# Add source and ceph-disk as mounts to container
-	CONT_ARGS+="-v ${SRC}:${SRC} -v ${WD}/ceph-disk:/data/ceph-disk "
+	CONT_ARGS+="-v ${SRC}:${SRC} -v ${WD}/${DMOUNT}:/data/ceph-disk "
 }
 
 function run_container()
@@ -100,16 +117,6 @@ function run_container()
 			CEPH_DEV_DIR=/data/ceph-disk ${SRC}/src/vstart.sh -d -n -x"
 	fi
 }
-
-# No idea why this is not working. Figure it out
-#function clean_up()
-#{
-#	# Clean up fake drives and folder we created
-#	echo "Cleaning up stuff"
-#	sudo umount ${WD}/ceph-disk
-#	rm -rf ${WD}/c-disk ${WD}/ceph-disk
-#}
-#trap clean_up ERR
 
 populate_stuff
 run_container

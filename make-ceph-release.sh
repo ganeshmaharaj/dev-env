@@ -73,6 +73,21 @@ function populate_stuff()
 	CONT_ARGS+="-v ${SRC}:/data/ceph-src -v ${DEST}:/data/ceph-dest "
 }
 
+function create_user()
+{
+	if [ "${USER}" != "root" ]; then
+		docker exec -it ${CONT_NAME} bash -c \
+			"adduser --disabled-password --gecos '' ${USER}"
+		docker exec -it ${CONT_NAME} bash -c \
+			"usermod -aG sudo ${USER}; \
+			usermod --password '' ${USER}"
+		docker exec -it ${CONT_NAME} bash -c \
+			"chown -R ${USER}.${USER} /data/ceph-dest/; \
+			apt-get update; apt-get install sudo"
+	fi
+
+}
+
 function deb_release()
 {
 	echo "Starting build for ${REL}..."
@@ -113,7 +128,7 @@ function rpm_release()
 
 	# Set some config for rpm build
 	docker exec -it ${CONT_NAME} bash -c \
-		'echo "%_topdir /data/ceph-dest" >> ~/.rpmmacros'
+		"echo "%_topdir /data/ceph-dest" >> ~/.rpmmacros"
 	docker exec -it ${CONT_NAME} bash -c \
 		"echo '%packager $(git config user.name) <$(git config user.email)>' \
 		>> ~/.rpmmacros" || { echo \
