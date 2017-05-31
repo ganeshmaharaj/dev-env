@@ -17,6 +17,7 @@ CONT_NAME=""
 WD=`pwd`
 DIMG=""
 DMOUNT=""
+OP=""
 
 function usage()
 {
@@ -24,34 +25,33 @@ function usage()
 	echo "Usage: ${0} [-s|--source]"
 	echo ""
 	echo "-s|--source:	Location of the source ceph repo"
+	echo "-d|--delete:	Delete container and associated files"
 	echo ""
 	exit 1
 }
 
-ARGS=$(getopt -o s: -l source: -- "$@");
+ARGS=$(getopt -o s:d:h -l source:,delete:,help -- "$@");
 if [ $? -ne 0 ]; then usage; fi
 eval set -- "$ARGS"
 while true; do
 	case "$1" in
-	-s|--source) SRC=$2; shift 2;;
+	-s|--source) OP="CREATE"; SRC=$2; shift 2;;
+	-d|--delete) OP="DELETE"; CONT_NAME=$2; shift 2;;
+	-h|--help) usage; break;;
 	--)shift; break;;
 	*) usage;;
 	esac
 done
 
-if [ -z "${SRC}" ]; then
+if [ "${OP}" == "CREATE" ] && [ -z "${SRC}" ]; then
 	echo "Need source dir to run vstart"
-	exit 1
+	usage
 fi
 
-function clean_up()
-{
-	# Clean up fake drives and folder we created
-	echo "Cleaning up stuff"
-	sudo umount ${WD}/ceph-disk
-	rm -rf ${WD}/c-disk ${WD}/ceph-disk
-}
-trap clean_up ERR
+if [ "${OP}" == "DELETE" ] && [ -z "${CONT_NAME}" ]; then
+	echo "Need container name to delete"
+	usage
+fi
 
 function populate_stuff()
 {
@@ -118,5 +118,24 @@ function run_container()
 	fi
 }
 
-populate_stuff
-run_container
+function delete_container()
+{
+	# Find drives mounted on host from container
+	DMOUNT="`docker inspect -f '{{ range .Mounts}}{{if eq .Destination "/data/ceph-disk" }}{{.Source}}{{end}}{{end}}' $CONT_NAME`"
+	DIMG="c-disk-${DMOUNT##*/ceph-disk-}"
+
+	# Delete container
+	docker stop ${CONT_NAME}
+	docker rm ${CONT_NAME}
+
+	#Unmount and delete files
+	sudo umount ${DMOUNT}
+	sudo rm -rf ${DMOUNT} ${DIMG}
+}
+
+if [ "${OP}" == "CREATE" ]; then
+	populate_stuff
+	run_container
+elif [ "${OP}" == "DELETE" ]; then
+	delete_container
+fi
