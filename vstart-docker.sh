@@ -43,6 +43,11 @@ while true; do
 	esac
 done
 
+if [ -z "${OP}" ]; then
+	echo "Need an operation"
+	usage
+fi
+
 if [ "${OP}" == "CREATE" ] && [ -z "${SRC}" ]; then
 	echo "Need source dir to run vstart"
 	usage
@@ -78,7 +83,8 @@ function populate_stuff()
 	DMOUNT="ceph-disk-${SRC##*/}"
 
 	# Setup disk for use as CEPH_DEV_DIR
-	truncate -s 1G ${WD}/${DIMG}
+	# Post first Luminous release, 1G drive is not enough.
+	truncate -s 2G ${WD}/${DIMG}
 	mkfs.xfs ${WD}/${DIMG}
 	mkdir -p ${WD}/${DMOUNT}
 	sudo mount -t xfs ${WD}/${DIMG} ${WD}/${DMOUNT}
@@ -86,10 +92,16 @@ function populate_stuff()
 
 	# Add source and ceph-disk as mounts to container
 	CONT_ARGS+="-v ${SRC}:${SRC} -v ${WD}/${DMOUNT}:/data/ceph-disk "
+
+	# Allow dashboard and restful ports to host
+	# Find running vstart containers and use that number to increment host ports
+	vsconts=$(docker ps -qf "name=vstart" | wc -l)
+	CONT_ARGS+="-p `expr $vsconts + 4`1000:41000 -p `expr $vsconts + 4`2000:42000"
 }
 
 function run_container()
 {
+	echo ${CONT_ARGS}
 	# Start container
 	docker run -it -d ${CONT_ARGS} ${OS,,}:${REL} bash
 	if [ "${USER}" != "root" ]; then
