@@ -91,7 +91,6 @@ function create_user()
 function deb_release()
 {
 	echo "Starting build for ${REL}..."
-	echo "${CEPH_EXTRA_CMAKE_ARGS}"
 
 	# Set things unique to these systems
 	if ${DBG}; then
@@ -103,7 +102,7 @@ function deb_release()
 
 	# Setup packages for building
 	docker exec -it ${CONT_NAME} apt-get update
-	docker exec -it ${CONT_NAME} apt-get install --yes lsb-release reprepro
+	docker exec -it ${CONT_NAME} apt-get install --yes lsb-release reprepro wget
 	docker exec -it ${CONT_NAME} bash -c \
 		'cd /data/ceph-src; /data/ceph-src/install-deps.sh; exit $?'
 
@@ -171,7 +170,9 @@ else
 fi
 
 # Always clean container at the end (only if things work fine).
-if [ $? -eq 0 ]; then
-	docker stop ${CONT_NAME}
-	docker rm ${CONT_NAME}
-fi
+# For some reason this is not working. Always keep getting error code 0 from
+# make-debs
+#if [ $? -eq 0 ]; then
+#	docker stop ${CONT_NAME}
+#	docker rm ${CONT_NAME}
+#fi
