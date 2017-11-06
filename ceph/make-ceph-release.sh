@@ -102,7 +102,9 @@ function deb_release()
 
 	# Setup packages for building
 	docker exec -it ${CONT_NAME} apt-get update
-	docker exec -it ${CONT_NAME} apt-get install --yes lsb-release reprepro wget
+	docker exec -it ${CONT_NAME} apt-get install --yes \
+    lsb-release reprepro wget \
+    linux-headers-$(uname -r)
 	docker exec -it ${CONT_NAME} bash -c \
 		'cd /data/ceph-src; /data/ceph-src/install-deps.sh; exit $?'
 
