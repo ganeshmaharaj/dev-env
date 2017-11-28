@@ -46,6 +46,10 @@ EOF"
   sudo dnf install -y kubelet-${KUBE_VERSION} kubeadm-${KUBE_VERSION} kubectl-${KUBE_VERSION} docker
   sudo systemctl enable kubelet && sudo systemctl start kubelet
   sudo systemctl enable docker && sudo systemctl start docker
+
+  # Issue logged and discussed https://github.com/openshift/origin/issues/15038
+  echo "Clearing rhel secrets.. This is a workaround.."
+  sudo rm -rf /usr/share/rhel/secrets
 }
 
 if [ -f /etc/redhat-release ]; then
