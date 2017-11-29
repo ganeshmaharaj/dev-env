@@ -85,6 +85,11 @@ sudo mv ${TMP_DIR}/helm /usr/local/bin/helm
 rm -rf ${TMP_DIR}
 sudo -E ${SCRIPT_ENV} /usr/local/bin/helm init
 
+# https://github.com/kubernetes/helm/issues/2224
+echo "Creating tiller service account..."
+curl https://raw.githubusercontent.com/ganeshmaharaj/ceph-dev-env/master/kube/tiller-perms.yaml | sudo -E ${SCRIPT_ENV} kubectl create -f -
+sudo -E ${SCRIPT_ENV} kubectl patch deploy --namespace kube-system tiller-deploy -p '{"spec":{"template":{"spec":{"serviceAccount":"tiller"}}}}'
+
 echo "Setting some env variables.. Writing them to your bashrc.."
 echo "export KUBE_VERSION=${KUBE_VERSION}" >> ~/.bashrc
 echo "export HELM_VERSION=${HELM_VERSION}" >> ~/.bashrc
