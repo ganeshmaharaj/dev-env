@@ -67,30 +67,35 @@ echo "Setup kube on this system"
 sudo -E kubeadm reset
 sudo -E kubeadm init --pod-network-cidr 10.244.0.0/16
 
+echo "Allow $USER to run kube commands..."
+mkdir -p $HOME/.kube
+sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+sudo chown $(id -u):$(id -g) $HOME/.kube/config
+
 echo "Tainting master on NoSchedule..."
-sudo -E ${SCRIPT_ENV} kubectl taint nodes `hostname` node-role.kubernetes.io/master:NoSchedule-
+kubectl taint nodes `hostname` node-role.kubernetes.io/master:NoSchedule-
 
 # Using calico as the CNI given I mostly work with openstack-helm
 # Using info from: https://openstack-helm.readthedocs.io/en/latest/install/multinode.html
-sudo -E ${SCRIPT_ENV} kubectl create -f http://docs.projectcalico.org/v2.1/getting-started/kubernetes/installation/hosted/kubeadm/1.6/calico.yaml
+kubectl create -f http://docs.projectcalico.org/v2.1/getting-started/kubernetes/installation/hosted/kubeadm/1.6/calico.yaml
 wget -q https://github.com/projectcalico/calicoctl/releases/download/v1.6.1/calicoctl -O ~/calicoctl
 sudo -E chmod +x ~/calicoctl
 
 echo "Setting up default RBAC for OSH..."
-sudo -E ${SCRIPT_ENV} kubectl update -f https://raw.githubusercontent.com/openstack/openstack-helm/master/tools/kubeadm-aio/assets/opt/rbac/dev.yaml
+kubectl update -f https://raw.githubusercontent.com/openstack/openstack-helm/master/tools/kubeadm-aio/assets/opt/rbac/dev.yaml
 
 echo "Now let us install helm.."
 curl -sSL https://storage.googleapis.com/kubernetes-helm/helm-${HELM_VERSION}-linux-amd64.tar.gz | tar -zxv --strip-components=1 -C ${TMP_DIR}
 sudo mv ${TMP_DIR}/helm /usr/local/bin/helm
 rm -rf ${TMP_DIR}
-sudo -E ${SCRIPT_ENV} /usr/local/bin/helm init
+/usr/local/bin/helm init
 
 # https://github.com/kubernetes/helm/issues/2224
 echo "Creating tiller service account..."
-curl https://raw.githubusercontent.com/ganeshmaharaj/ceph-dev-env/master/kube/tiller-perms.yaml | sudo -E ${SCRIPT_ENV} kubectl create -f -
-sudo -E ${SCRIPT_ENV} kubectl patch deploy --namespace kube-system tiller-deploy -p '{"spec":{"template":{"spec":{"serviceAccount":"tiller"}}}}'
+curl https://raw.githubusercontent.com/ganeshmaharaj/ceph-dev-env/master/kube/tiller-perms.yaml | kubectl create -f -
+kubectl patch deploy --namespace kube-system tiller-deploy -p '{"spec":{"template":{"spec":{"serviceAccount":"tiller"}}}}'
 
 echo "Setting some env variables.. Writing them to your bashrc.."
 echo "export KUBE_VERSION=${KUBE_VERSION}" >> ~/.bashrc
 echo "export HELM_VERSION=${HELM_VERSION}" >> ~/.bashrc
-echo "export KUBECONFIG=/etc/kubernetes/admin.conf" >> ~/.bashrc
+echo "export KUBECONFIG=${HOME}/.kube/config" >> ~/.bashrc
