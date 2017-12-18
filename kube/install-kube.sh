@@ -6,8 +6,8 @@
 # Peg the versions to the ones below as that is what openstack-helm uses. We can
 # move it to newer ones when we stop using them or stop working on openstack-helm
 # Using kube version from the apt sources against downloading the tar like OSH does.
-KUBE_VERSION="1.7.5-*"
-HELM_VERSION=v2.6.1
+KUBE_VERSION="1.8.*"
+HELM_VERSION=v2.7.2
 TMP_DIR=$(mktemp -d)
 SCRIPT_ENV="KUBECONFIG=/etc/kubernetes/admin.conf "
 
