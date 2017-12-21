@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 
 # Script to install kube and helm in a new machine/container
 # Author: Ganesh Mahalingam
@@ -8,8 +8,10 @@
 # Using kube version from the apt sources against downloading the tar like OSH does.
 helm_ver=$(curl https://raw.githubusercontent.com/openstack/openstack-helm/master/tools/gate/vars.sh 2>/dev/null | grep HELM_VERSION | head -1 | awk -F '-|}' '{print $2}')
 kube_ver=$(curl https://raw.githubusercontent.com/openstack/openstack-helm/master/tools/gate/vars.sh 2>/dev/null | grep KUBE_VERSION | head -1 | awk -F '-|}' '{print $2}')
-KUBE_VERSION=${KUBE_VERSION:-$kube_ver}
-HELM_VERSION=${HELM_VERSION:-$helm_ver}
+# Hack the kub version more to get apt to work nice.
+kube_ver=${kube_ver#\"v}
+KUBE_VERSION=${KUBE_VERSION:-${kube_ver%?}-*}
+HELM_VERSION=${HELM_VERSION:-${helm_ver//\"/}}
 TMP_DIR=$(mktemp -d)
 SCRIPT_ENV="KUBECONFIG=/etc/kubernetes/admin.conf "
 
@@ -24,6 +26,8 @@ EOF"
 
   sudo -E apt update
   sudo -E apt install -y make git curl
+  # More horrible hacks, thanks to bad dependency listing by the kube folks
+  sudo -E apt install -y kubernetes-cni=0.5.1-*
   sudo -E apt install -y docker.io kubelet="${KUBE_VERSION}" kubeadm="${KUBE_VERSION}" \
               kubectl="${KUBE_VERSION}"
   sudo -E apt-mark hold kubelet kubeadm kubectl
@@ -45,6 +49,7 @@ EOF"
   sudo -E setenforce 0
   sudo dnf -y update
   sudo dnf install -y  make git curl wget
+  sudo dnf install -y kubernetes-cni=0.5.1-*
   sudo dnf install -y kubelet-${KUBE_VERSION} kubeadm-${KUBE_VERSION} kubectl-${KUBE_VERSION} docker
   sudo systemctl enable kubelet && sudo systemctl start kubelet
   sudo systemctl enable docker && sudo systemctl start docker
