@@ -99,7 +99,7 @@ rm -rf ${TMP_DIR}
 
 # https://github.com/kubernetes/helm/issues/2224
 echo "Creating tiller service account..."
-curl https://raw.githubusercontent.com/ganeshmaharaj/ceph-dev-env/master/kube/tiller-perms.yaml | kubectl create -f -
+curl https://raw.githubusercontent.com/ganeshmaharaj/ceph-dev-env/master/kube/extra-perms.yaml | kubectl create -f -
 kubectl patch deploy --namespace kube-system tiller-deploy -p '{"spec":{"template":{"spec":{"serviceAccount":"tiller"}}}}'
 
 echo "Setting some env variables.. Writing them to your bashrc.."
