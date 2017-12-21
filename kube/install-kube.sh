@@ -6,8 +6,10 @@
 # Peg the versions to the ones below as that is what openstack-helm uses. We can
 # move it to newer ones when we stop using them or stop working on openstack-helm
 # Using kube version from the apt sources against downloading the tar like OSH does.
-KUBE_VERSION="1.8.5-00*"
-HELM_VERSION=v2.7.2
+helm_ver=$(curl https://raw.githubusercontent.com/openstack/openstack-helm/master/tools/gate/vars.sh 2>/dev/null | grep HELM_VERSION | head -1 | awk -F '-|}' '{print $2}')
+kube_ver=$(curl https://raw.githubusercontent.com/openstack/openstack-helm/master/tools/gate/vars.sh 2>/dev/null | grep KUBE_VERSION | head -1 | awk -F '-|}' '{print $2}')
+KUBE_VERSION=${KUBE_VERSION:-$kube_ver}
+HELM_VERSION=${HELM_VERSION:-$helm_ver}
 TMP_DIR=$(mktemp -d)
 SCRIPT_ENV="KUBECONFIG=/etc/kubernetes/admin.conf "
 
