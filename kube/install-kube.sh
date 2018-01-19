@@ -6,11 +6,13 @@
 # Peg the versions to the ones below as that is what openstack-helm uses. We can
 # move it to newer ones when we stop using them or stop working on openstack-helm
 # Using kube version from the apt sources against downloading the tar like OSH does.
-helm_ver=$(curl https://raw.githubusercontent.com/openstack/openstack-helm/master/tools/gate/vars.sh 2>/dev/null | grep HELM_VERSION | head -1 | awk -F '-|}' '{print $2}')
-kube_ver=$(curl https://raw.githubusercontent.com/openstack/openstack-helm/master/tools/gate/vars.sh 2>/dev/null | grep KUBE_VERSION | head -1 | awk -F '-|}' '{print $2}')
+helm_ver=$(curl -SsL https://github.com/kubernetes/helm/releases/latest | awk '/\/tag\//' | cut -d '"' -f 2 | awk '{n=split($NF,a,"/");print a[n]}'  | awk 'a !~ $0{print}; {a=$0}')
+# Clearly this isn't good enough. trying another alternate route
+#kube_ver=$(curl -SsL https://github.com/kubernetes/kubernetes/releases/latest | awk '/\/tag\//' | cut -d '"' -f 2 | awk '{n=split($NF,a,"/");print a[n]}'  | awk 'a !~ $0{print}; {a=$0}')
+kube_ver=$(curl -SsL https://storage.googleapis.com/kubernetes-release/release/stable.txt)
 # Hack the kub version more to get apt to work nice.
 kube_ver=${kube_ver#\"v}
-KUBE_VERSION=${KUBE_VERSION:-${kube_ver%?}-*}
+KUBE_VERSION=${KUBE_VERSION:-${kube_ver#v}-*}
 HELM_VERSION=${HELM_VERSION:-${helm_ver//\"/}}
 TMP_DIR=$(mktemp -d)
 SCRIPT_ENV="KUBECONFIG=/etc/kubernetes/admin.conf "
@@ -47,6 +49,7 @@ EOF"
 
   echo "put selinux setenforce to 0 until kubelet can handle selinux better..."
   sudo -E setenforce 0
+  sudo sed -i 's/^SELINUX=.*/SELINUX=permissive/g' /etc/selinux/config
   sudo dnf -y update
   sudo dnf install -y  make git curl wget
   sudo dnf install -y kubernetes-cni=0.5.1-*

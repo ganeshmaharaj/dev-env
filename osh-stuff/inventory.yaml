@@ -1,0 +1,9 @@
+all:
+  hosts:
+    primary:
+      ansible_connection: local
+  vars:
+    zuul:
+      project:
+#        src_dir: /data/workspace/ceph/openstack-helm-infra
+        src_dir: /home/ganeshma/openstack-helm-infra
