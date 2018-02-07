@@ -5,5 +5,4 @@ all:
   vars:
     zuul:
       project:
-#        src_dir: /data/workspace/ceph/openstack-helm-infra
-        src_dir: /home/ganeshma/openstack-helm-infra
+        src_dir: /data/workspace/ceph/openstack-helm-infra
