@@ -16,6 +16,7 @@ KUBE_VERSION=${KUBE_VERSION:-${kube_ver#v}-*}
 HELM_VERSION=${HELM_VERSION:-${helm_ver//\"/}}
 TMP_DIR=$(mktemp -d)
 SCRIPT_ENV="KUBECONFIG=/etc/kubernetes/admin.conf "
+NETWORK_CIDR="10.244.0.0/16"
 
 function apt_install() {
   echo "Installing Kubernetes in an apt based system..."
@@ -75,7 +76,7 @@ fi
 # Running kubeadm reset cause of issue https://github.com/kubernetes/kubernetes/issues/53356
 echo "Setup kube on this system"
 sudo -E kubeadm reset
-sudo -E kubeadm init --pod-network-cidr 10.244.0.0/16
+sudo -E kubeadm init --pod-network-cidr "${NETWORK_CIDR}"
 
 echo "Allow $USER to run kube commands..."
 mkdir -p $HOME/.kube
@@ -87,8 +88,8 @@ kubectl taint nodes `hostname` node-role.kubernetes.io/master:NoSchedule-
 
 # Using calico as the CNI given I mostly work with openstack-helm
 # Using info from: https://openstack-helm.readthedocs.io/en/latest/install/multinode.html
-kubectl create -f http://docs.projectcalico.org/v2.1/getting-started/kubernetes/installation/hosted/kubeadm/1.6/calico.yaml
-wget -q https://github.com/projectcalico/calicoctl/releases/download/v1.6.1/calicoctl -O ~/calicoctl
+curl https://docs.projectcalico.org/v3.0/getting-started/kubernetes/installation/hosted/kubeadm/1.7/calico.yaml | sed -e 's|192.168.0.0/16|'"${NETWORK_CIDR}"'|g' | kubectl create -f -
+curl -O -L https://github.com/projectcalico/calicoctl/releases/download/v2.0.0/calicoctl
 sudo -E chmod +x ~/calicoctl
 
 echo "Setting up default RBAC for OSH..."
