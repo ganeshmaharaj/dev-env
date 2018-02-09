@@ -7,10 +7,9 @@
 # move it to newer ones when we stop using them or stop working on openstack-helm
 # Using kube version from the apt sources against downloading the tar like OSH does.
 helm_ver=$(curl -SsL https://github.com/kubernetes/helm/releases/latest | awk '/\/tag\//' | cut -d '"' -f 2 | awk '{n=split($NF,a,"/");print a[n]}'  | awk 'a !~ $0{print}; {a=$0}')
-# Clearly this isn't good enough. trying another alternate route
-#kube_ver=$(curl -SsL https://github.com/kubernetes/kubernetes/releases/latest | awk '/\/tag\//' | cut -d '"' -f 2 | awk '{n=split($NF,a,"/");print a[n]}'  | awk 'a !~ $0{print}; {a=$0}')
 kube_ver=$(curl -SsL https://storage.googleapis.com/kubernetes-release/release/stable.txt)
 # Hack the kub version more to get apt to work nice.
+# Not using kube version from here anymore. Just what is there in the latest package
 kube_ver=${kube_ver#\"v}
 KUBE_VERSION=${KUBE_VERSION:-${kube_ver#v}-*}
 HELM_VERSION=${HELM_VERSION:-${helm_ver//\"/}}
@@ -29,10 +28,7 @@ EOF"
 
   sudo -E apt update
   sudo -E apt install -y make git curl
-  # More horrible hacks, thanks to bad dependency listing by the kube folks
-  sudo -E apt install -y kubernetes-cni=0.5.1-*
-  sudo -E apt install -y docker.io kubelet="${KUBE_VERSION}" kubeadm="${KUBE_VERSION}" \
-              kubectl="${KUBE_VERSION}"
+  sudo -E apt install -y docker.io kubelet kubeadm kubectl
   sudo -E apt-mark hold kubelet kubeadm kubectl
 }
 
@@ -53,8 +49,7 @@ EOF"
   sudo sed -i 's/^SELINUX=.*/SELINUX=permissive/g' /etc/selinux/config
   sudo dnf -y update
   sudo dnf install -y  make git curl wget
-  sudo dnf install -y kubernetes-cni=0.5.1-*
-  sudo dnf install -y kubelet-${KUBE_VERSION} kubeadm-${KUBE_VERSION} kubectl-${KUBE_VERSION} docker
+  sudo dnf install -y kubelet kubeadm kubectl docker
   sudo systemctl enable kubelet && sudo systemctl start kubelet
   sudo systemctl enable docker && sudo systemctl start docker
 
@@ -91,9 +86,6 @@ kubectl taint nodes `hostname` node-role.kubernetes.io/master:NoSchedule-
 curl https://docs.projectcalico.org/v3.0/getting-started/kubernetes/installation/hosted/kubeadm/1.7/calico.yaml | sed -e 's|192.168.0.0/16|'"${NETWORK_CIDR}"'|g' | kubectl create -f -
 curl -O -L https://github.com/projectcalico/calicoctl/releases/download/v2.0.0/calicoctl
 sudo -E chmod +x ~/calicoctl
-
-echo "Setting up default RBAC for OSH..."
-kubectl update -f https://raw.githubusercontent.com/openstack/openstack-helm/master/tools/kubeadm-aio/assets/opt/rbac/dev.yaml
 
 echo "Now let us install helm.."
 curl -sSL https://storage.googleapis.com/kubernetes-helm/helm-${HELM_VERSION}-linux-amd64.tar.gz | tar -zxv --strip-components=1 -C ${TMP_DIR}
