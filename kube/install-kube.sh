@@ -58,6 +58,55 @@ EOF"
   sudo rm -rf /usr/share/rhel/secrets
 }
 
+function install_kube() {
+  # Setting the subnet static here for now.
+  # Running kubeadm reset cause of issue https://github.com/kubernetes/kubernetes/issues/53356
+  echo "Setup kube on this system"
+  sudo -E kubeadm reset
+  sudo -E kubeadm init --pod-network-cidr "${NETWORK_CIDR}"
+
+  echo "Allow $USER to run kube commands..."
+  mkdir -p $HOME/.kube
+  sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+  sudo chown $(id -u):$(id -g) $HOME/.kube/config
+}
+
+function setup_master() {
+  echo "Tainting master on NoSchedule..."
+  kubectl taint nodes `hostname` node-role.kubernetes.io/master:NoSchedule-
+
+  # Using calico as the CNI given I mostly work with openstack-helm
+  # Using info from: https://openstack-helm.readthedocs.io/en/latest/install/multinode.html
+  curl https://docs.projectcalico.org/v3.0/getting-started/kubernetes/installation/hosted/kubeadm/1.7/calico.yaml | sed -e 's|192.168.0.0/16|'"${NETWORK_CIDR}"'|g' | kubectl create -f -
+  curl -O -L https://github.com/projectcalico/calicoctl/releases/download/v2.0.0/calicoctl
+  sudo -E chmod +x ~/calicoctl
+
+  echo "Now let us install helm.."
+  curl -sSL https://storage.googleapis.com/kubernetes-helm/helm-${HELM_VERSION}-linux-amd64.tar.gz | tar -zxv --strip-components=1 -C ${TMP_DIR}
+  sudo mv ${TMP_DIR}/helm /usr/local/bin/helm
+  rm -rf ${TMP_DIR}
+  /usr/local/bin/helm init
+
+  # https://github.com/kubernetes/helm/issues/2224
+  echo "Creating tiller service account..."
+  curl https://raw.githubusercontent.com/ganeshmaharaj/ceph-dev-env/master/kube/extra-perms.yaml | kubectl create -f -
+  kubectl patch deploy --namespace kube-system tiller-deploy -p '{"spec":{"template":{"spec":{"serviceAccount":"tiller"}}}}'
+
+  echo "Setting some env variables.. Writing them to your bashrc.."
+  echo "export KUBE_VERSION=${KUBE_VERSION}" >> ~/.bashrc
+  echo "export HELM_VERSION=${HELM_VERSION}" >> ~/.bashrc
+  echo "export KUBECONFIG=${HOME}/.kube/config" >> ~/.bashrc
+}
+
+function label_nodes_ceph() {
+  for lbl in openstack-control-plane ceph-mon ceph-osd ceph-mgr ceph-rgw ceph-mds
+  do
+    echo "Label Node:  $lbl"
+    kubectl label nodes $lbl=enabled --all --overwrite
+  done
+}
+
+
 if [ -f /etc/redhat-release ]; then
   dnf_install
 elif [ -f /etc/lsb-release ]; then
@@ -66,39 +115,6 @@ else
   echo "Unable to find the OS type to use a package manager."
   exit 1
 fi
-
-# Setting the subnet static here for now.
-# Running kubeadm reset cause of issue https://github.com/kubernetes/kubernetes/issues/53356
-echo "Setup kube on this system"
-sudo -E kubeadm reset
-sudo -E kubeadm init --pod-network-cidr "${NETWORK_CIDR}"
-
-echo "Allow $USER to run kube commands..."
-mkdir -p $HOME/.kube
-sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
-sudo chown $(id -u):$(id -g) $HOME/.kube/config
-
-echo "Tainting master on NoSchedule..."
-kubectl taint nodes `hostname` node-role.kubernetes.io/master:NoSchedule-
-
-# Using calico as the CNI given I mostly work with openstack-helm
-# Using info from: https://openstack-helm.readthedocs.io/en/latest/install/multinode.html
-curl https://docs.projectcalico.org/v3.0/getting-started/kubernetes/installation/hosted/kubeadm/1.7/calico.yaml | sed -e 's|192.168.0.0/16|'"${NETWORK_CIDR}"'|g' | kubectl create -f -
-curl -O -L https://github.com/projectcalico/calicoctl/releases/download/v2.0.0/calicoctl
-sudo -E chmod +x ~/calicoctl
-
-echo "Now let us install helm.."
-curl -sSL https://storage.googleapis.com/kubernetes-helm/helm-${HELM_VERSION}-linux-amd64.tar.gz | tar -zxv --strip-components=1 -C ${TMP_DIR}
-sudo mv ${TMP_DIR}/helm /usr/local/bin/helm
-rm -rf ${TMP_DIR}
-/usr/local/bin/helm init
-
-# https://github.com/kubernetes/helm/issues/2224
-echo "Creating tiller service account..."
-curl https://raw.githubusercontent.com/ganeshmaharaj/ceph-dev-env/master/kube/extra-perms.yaml | kubectl create -f -
-kubectl patch deploy --namespace kube-system tiller-deploy -p '{"spec":{"template":{"spec":{"serviceAccount":"tiller"}}}}'
-
-echo "Setting some env variables.. Writing them to your bashrc.."
-echo "export KUBE_VERSION=${KUBE_VERSION}" >> ~/.bashrc
-echo "export HELM_VERSION=${HELM_VERSION}" >> ~/.bashrc
-echo "export KUBECONFIG=${HOME}/.kube/config" >> ~/.bashrc
+install_kube
+setup_master
+label_nodes_ceph
