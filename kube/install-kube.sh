@@ -27,8 +27,10 @@ EOF"
   curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo -E apt-key add -
 
   sudo -E apt update
+  sudo groupadd docker
+  sudo gpasswd -a ${USER} docker
   sudo -E apt install -y make git curl
-  sudo -E apt install -y docker.io kubelet kubeadm kubectl
+  sudo -E apt install -y docker-ce kubelet kubeadm kubectl
   sudo -E apt-mark hold kubelet kubeadm kubectl
 }
 
@@ -44,14 +46,19 @@ repo_gpgcheck=1
 gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
 EOF"
 
+  sudo dnf config-manager --add-repo https://download.docker.com/linux/fedora/docker-ce.repo
   echo "put selinux setenforce to 0 until kubelet can handle selinux better..."
   sudo -E setenforce 0
   sudo sed -i 's/^SELINUX=.*/SELINUX=permissive/g' /etc/selinux/config
   sudo dnf -y update
+  sudo groupadd docker
+  sudo gpasswd -a ${USER} docker
   sudo dnf install -y  make git curl wget
-  sudo dnf install -y kubelet kubeadm kubectl docker
-  sudo systemctl enable kubelet && sudo systemctl start kubelet
+  sudo dnf install -y kubelet kubeadm kubectl docker-ce
+  # Hack for docker-ce & kubeadm
+  sudo sed -i 's/--cgroup-driver=systemd/--cgroup-driver=cgroupfs/g' /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
   sudo systemctl enable docker && sudo systemctl start docker
+  sudo systemctl enable kubelet && sudo systemctl start kubelet
 
   # Issue logged and discussed https://github.com/openshift/origin/issues/15038
   echo "Clearing rhel secrets.. This is a workaround.."
