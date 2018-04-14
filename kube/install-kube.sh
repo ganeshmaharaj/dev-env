@@ -6,7 +6,7 @@
 # Peg the versions to the ones below as that is what openstack-helm uses. We can
 # move it to newer ones when we stop using them or stop working on openstack-helm
 # Using kube version from the apt sources against downloading the tar like OSH does.
-helm_ver=$(curl -SsL https://github.com/kubernetes/helm/releases/latest | awk '/\/tag\//' | cut -d '"' -f 2 | awk '{n=split($NF,a,"/");print a[n]}'  | awk 'a !~ $0{print}; {a=$0}')
+helm_ver=$(curl -SsL https://github.com/kubernetes/helm/releases/latest | awk '/\/tag\//' | grep -v no-underline | cut -d '"' -f 2 | awk '{n=split($NF,a,"/");print a[n]}'  | awk 'a !~ $0{print}; {a=$0}')
 kube_ver=$(curl -SsL https://storage.googleapis.com/kubernetes-release/release/stable.txt)
 # Hack the kub version more to get apt to work nice.
 # Not using kube version from here anymore. Just what is there in the latest package
