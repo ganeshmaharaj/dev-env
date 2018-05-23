@@ -26,12 +26,24 @@ EOF"
   echo "Get keys..."
   curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo -E apt-key add -
 
+  #Docker repository for ce version package
+  curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo -E apt-key add -
+  sudo -E add-apt-repository \
+   "deb https://download.docker.com/linux/$(. /etc/os-release; echo "$ID") \
+   $(lsb_release -cs) \
+   stable"
+
   sudo -E apt update
   sudo groupadd docker
   sudo gpasswd -a ${USER} docker
   sudo -E apt install -y make git curl
-  sudo -E apt install -y docker-ce kubelet kubeadm kubectl
+  sudo -E apt install -y --allow-downgrades kubelet kubeadm kubectl docker-ce=$(apt-cache madison docker-ce | grep 17.03 | head -1 | awk '{print $3}')
   sudo -E apt-mark hold kubelet kubeadm kubectl
+
+  sudo sed -i 's/--cgroup-driver=systemd/--cgroup-driver=cgroupfs/g' /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
+  sudo systemctl daemon-reload
+  sudo systemctl enable docker && sudo systemctl start docker
+  sudo systemctl enable kubelet && sudo systemctl start kubelet
 }
 
 function dnf_install() {
@@ -97,7 +109,7 @@ function setup_master() {
   # https://github.com/kubernetes/helm/issues/2224
   echo "Creating tiller service account..."
   curl https://raw.githubusercontent.com/ganeshmaharaj/ceph-dev-env/master/kube/extra-perms.yaml | kubectl create -f -
-  kubectl patch deploy --namespace kube-system tiller-deploy -p '{"spec":{"template":{"spec":{"serviceAccount":"tiller"}}}}'
+  kubectl patch deploy --namespace kube-system tiller-deploy -p '{"spec":{"template":{"spec":{"serviceAccount":"tiller", "automountServiceAccountToken": true}}}}'
 
   echo "Setting some env variables.. Writing them to your bashrc.."
   echo "export KUBE_VERSION=${KUBE_VERSION}" >> ~/.bashrc
