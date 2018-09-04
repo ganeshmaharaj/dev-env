@@ -82,7 +82,7 @@ function install_kube() {
   # Running kubeadm reset cause of issue https://github.com/kubernetes/kubernetes/issues/53356
   echo "Setup kube on this system"
   sudo -E kubeadm reset
-  sudo -E kubeadm init --pod-network-cidr "${NETWORK_CIDR}"
+  sudo -E kubeadm init --pod-network-cidr "${NETWORK_CIDR}" --service-cidr "${NETWORK_CIDR}"
 
   echo "Allow $USER to run kube commands..."
   mkdir -p $HOME/.kube
@@ -94,11 +94,14 @@ function setup_master() {
   echo "Tainting master on NoSchedule..."
   kubectl taint nodes `hostname` node-role.kubernetes.io/master:NoSchedule-
 
-  # Using calico as the CNI given I mostly work with openstack-helm
-  # Using info from: https://openstack-helm.readthedocs.io/en/latest/install/multinode.html
-  curl https://docs.projectcalico.org/v3.0/getting-started/kubernetes/installation/hosted/kubeadm/1.7/calico.yaml | sed -e 's|192.168.0.0/16|'"${NETWORK_CIDR}"'|g' | kubectl create -f -
-  curl -O -L https://github.com/projectcalico/calicoctl/releases/download/v2.0.0/calicoctl
-  sudo -E chmod +x ~/calicoctl
+  # Switching to flannel as default backend as the default calico script makes
+  # assumptions on service endpoints and that won't work if service_cidr is
+  # switched.
+  # curl https://docs.projectcalico.org/v3.0/getting-started/kubernetes/installation/hosted/kubeadm/1.7/calico.yaml | sed -e 's|192.168.0.0/16|'"${NETWORK_CIDR}"'|g' | kubectl create -f -
+  # curl -O -L https://github.com/projectcalico/calicoctl/releases/download/v2.0.0/calicoctl
+  # sudo -E chmod +x ~/calicoctl
+
+  kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
 
   echo "Now let us install helm.."
   curl -sSL https://storage.googleapis.com/kubernetes-helm/helm-${HELM_VERSION}-linux-amd64.tar.gz | tar -zxv --strip-components=1 -C ${TMP_DIR}
