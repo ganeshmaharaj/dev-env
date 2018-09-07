@@ -1,8 +1,6 @@
 #!/bin/bash -x
 set -e
 
-GO_VER="1.10"
-
 function apt_install() {
   sudo add-apt-repository -y ppa:gophers/archive
   sudo apt update
@@ -10,7 +8,13 @@ function apt_install() {
 }
 
 function install_golang() {
-  GO_URL=$(curl -s https://golang.org/dl/#stable | grep 'linux-amd64' | grep downloadBox | awk -F '"' '{print $4}')
+  if [ -z "${GO_VER}" ]; then
+    GO_URL=$(curl -s https://golang.org/dl/#stable | grep 'linux-amd64' | grep downloadBox | awk -F '"' '{print $4}')
+  else
+    GO_URL=$(curl -s https://golang.org/dl/#stable | grep 'linux-amd64' | grep ${GO_VER} | head -1 | awk -F '"' '{print $6}')
+  fi
+  # Clean old stuff
+  sudo rm -rf /usr/local/go
   curl ${GO_URL} | sudo tar -C /usr/local -xzf -
 }
 
