@@ -1,10 +1,14 @@
-Repository to host scripts related to ceph
-===================
+A repository to hold a collection of scripts to setup my dev environments
+=========================================================================
 
 This repository contains
-1. Vagrant VM script to run a vstart env
-2. Docker env for vstart
-3. Docker env to create deb/rpm packages for a limited set of distros
+* Ceph
+  * Vagrant VM script to run a vstart env
+  * Docker env for vstart
+  * Docker env to create deb/rpm packages for a limited set of distros
+  * Vagrant setup to bring up k8s + Rook
+* Kata
+  * Script to setup kata + containerd + golang on a system.
 
 * * *
 
@@ -42,3 +46,9 @@ you have completed ``make vstart`` before invoking the vagrant script.
 
 The number of monitors, mds and osd you would like vagrant to spawn
 respectively.. Will use the script default if not set.
+
+ * * *
+
+Kata Script
+-----------
+A simple script that will install kata, golang and containerd for the distro in use. Currently supports debian, ubuntu and fedora.
