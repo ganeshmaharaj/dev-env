@@ -89,7 +89,7 @@ function create_user()
 			usermod --password '' ${USER}"
 		docker exec -it ${CONT_NAME} bash -c \
 			"chown -R ${USER}.${USER} /data/ceph-dest/; \
-			apt-get update; apt-get install sudo"
+			apt update; apt install -y sudo"
 	fi
 
 }
@@ -102,10 +102,11 @@ function deb_release()
 	docker run -it -d ${CONT_ARGS} "${XTRA_ARGS[@]}" ${REL} bash
 
 	# Setup packages for building
-	docker exec -it ${CONT_NAME} apt-get update
-	docker exec -it ${CONT_NAME} apt-get install --yes \
+	docker exec -it ${CONT_NAME} apt update
+	docker exec -it ${CONT_NAME} apt install --yes \
     lsb-release reprepro wget \
-    linux-headers-$(uname -r)
+    linux-headers-$(uname -r) \
+    curl apt-transport-https
 	docker exec -it ${CONT_NAME} bash -c \
 		'cd /data/ceph-src; /data/ceph-src/install-deps.sh; exit $?'
 
