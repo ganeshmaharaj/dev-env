@@ -1,0 +1,38 @@
+{
+  "builders": [
+    {
+      "type": "qemu",
+      "vm_name": "test-ubuntu.qcow2",
+			"iso_url": "https://cloud-images.ubuntu.com/releases/focal/release/ubuntu-20.04-server-cloudimg-amd64.img",
+      "iso_checksum": "file:https://cloud-images.ubuntu.com/releases/focal/release/SHA256SUMS",
+      "disk_image": true,
+      "disk_size": "5120M",
+      "cpus": 2,
+      "memory": 2048,
+      "disk_interface": "virtio-scsi",
+      "disk_discard": "unmap",
+      "disk_compression": true,
+      "format": "qcow2",
+      "boot_wait": "20s",
+      "ssh_username": "builder",
+      "ssh_password": "builder",
+      "http_directory": "http",
+      "qemuargs": [
+        ["-serial", "telnet:localhost:43211,server,nowait"],
+        ["-smbios", "type=1,serial=ds=nocloud-net;instance-id=ubuntu;seedfrom=http://{{ .HTTPIP }}:{{ .HTTPPort }}/"]
+      ],
+      "use_default_display": true,
+      "headless": true
+    }
+  ],
+	"provisioners": [
+    {
+      "type": "shell",
+      "inline": ["/usr/bin/cloud-init status --wait"]
+    },
+    {
+      "type": "shell",
+      "script": "{{template_dir}}/setup.sh"
+    }
+  ]
+}
