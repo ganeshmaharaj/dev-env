@@ -17,9 +17,9 @@ function dnf_pkg_install()
   sudo dnf install -y fio
 }
 
-function yapper_pkg_install()
+function zypper_pkg_install()
 {
-  sudo yapper install -y fio
+  sudo zypper install -y fio
 }
 
 case "$ID" in
@@ -27,8 +27,8 @@ case "$ID" in
     deb_pkg_install;;
   "centos"|"fedora"*)
     dnf_pkg_install;;
-  "suse"*)
-    yapper_pkg_install;;
+  *"suse"*)
+    zypper_pkg_install;;
   *)
     echo "Unknown OS. No provisioning will happen";;
 esac

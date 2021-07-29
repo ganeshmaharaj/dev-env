@@ -1,0 +1,41 @@
+{
+  "variables": {
+    "packer_suse_image": "{{ env `PACKER_SUSE_IMAGE`}}",
+    "packer_suse_sha256": "{{env `PACKER_SUSE_SHA256`}}"
+  },
+  "builders": [
+    {
+      "type": "qemu",
+      "vm_name": "test-opensuse.qcow2",
+      "iso_url": "{{ user `packer_suse_image`}}",
+      "iso_checksum": "{{ user `packer_suse_sha256`}}",
+      "disk_image": true,
+      "cpus": 2,
+      "memory": 2048,
+      "disk_interface": "virtio-scsi",
+      "disk_discard": "unmap",
+      "disk_compression": true,
+      "format": "qcow2",
+      "boot_wait": "20s",
+      "ssh_username": "builder",
+      "ssh_password": "builder",
+      "http_directory": "http",
+      "qemuargs": [
+        ["-serial", "telnet:localhost:43211,server,nowait"],
+        ["-smbios", "type=1,serial=ds=nocloud-net;instance-id=centos;seedfrom=http://{{ .HTTPIP }}:{{ .HTTPPort }}/"]
+      ],
+      "use_default_display": true,
+      "headless": true
+    }
+  ],
+	"provisioners": [
+    {
+      "type": "shell",
+      "inline": ["/usr/bin/cloud-init status --wait"]
+    },
+    {
+      "type": "shell",
+      "script": "{{template_dir}}/setup.sh"
+    }
+  ]
+}
