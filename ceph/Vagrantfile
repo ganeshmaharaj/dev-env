@@ -5,6 +5,10 @@
 VAGRANTFILE_API_VERSION = "2"
 # Disk Value
 d = 1
+$disk_size = "10G"
+disk_prefix     = File.basename(File.dirname(__FILE__), "/")
+driveletters = ('a'..'z').to_a
+
 # Ceph specific stuff
 ceph_src_dir = ENV['CEPH_SRC_DIR'] || "#{File.dirname(__dir__)}/ceph"
 ENV['CEPH_MON'] ? ceph_mon = "MON=#{ENV['CEPH_MON']}" : ceph_mon = ""
@@ -15,7 +19,7 @@ ENV['CEPH_OSD'] ? ceph_osd = "OSD=#{ENV['CEPH_OSD']}" : ceph_osd = ""
 # required_plugins = %w( vagrant-proxyconf )
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
-  config.vm.box = "ubuntu/trusty64"
+  config.vm.box = "generic/ubuntu2204"
 #  config.vm.box = "fedora/24-cloud-base"
 
   # Install plugins that you might need.
@@ -24,6 +28,16 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   end
 
   config.vm.define :cephaio do |cephaio|
+    cephaio.vm.provider :libvirt do |lv|
+      lv.cpu_mode = "host-passthrough"
+      lv.cpus = "2"
+      lv.memory = "2048"
+      (1..d).each do |i|
+        lv.storage :file, :bus => "scsi", :device => "sd#{driveletters[i]}", :path => "disk-#{disk_prefix}-cephaio-#{i}.disk", :size => $disk_size, :type => "raw"
+      end
+      lv.memorybacking :access, :mode => "shared"
+    end
+
     cephaio.vm.provider :virtualbox do |vb|
 		vb.customize [ "modifyvm", :id, "--memory", "2048", "--cpus", "2" ]
 		(1..d).each do |i|
@@ -52,11 +66,14 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 	end
 
 	# Sync ceph source dir
-    cephaio.vm.synced_folder "#{ceph_src_dir}", "#{ceph_src_dir}", type: 'nfs'
+    cephaio.vm.synced_folder "#{ceph_src_dir}", "#{ceph_src_dir}", type: 'virtiofs'
 
 #############################################################
 # PROVISIONING OF THE VM
 #############################################################
+
+  # Fix up image
+  config.vm.provision "shell",  privileged:  false, path: "generic_ubuntu_hack.sh"
 
 	# Install packages
 	config.vm.provision "shell", inline: <<-SHELL
