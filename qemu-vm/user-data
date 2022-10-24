@@ -1,0 +1,22 @@
+#cloud-config
+users:
+  - default
+  - name: test
+    shell: /bin/bash
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    lock_passwd: false
+    plain_text_passwd: buildmach
+    ssh_authorized_keys:
+      - ecdsa-sha2-nistp521 AAAAE2VjZHNhLXNoYTItbmlzdHA1MjEAAAAIbmlzdHA1MjEAAACFBAHvpBf+3TRjJPW9WN+IRjF+qaa4n5lnH4Oz9bgiGBWeevG+ExxBeOnVweJBrkNkTmXjRXEbhdG+IZkXHO8nCQsdTABTidImjBjx617s4p7W3dVghpRPElbxw9oe2wBsaY0PmqhqWLuN1OdzxNoSr7cqIumN51MexyU+53BFOWI/o7Y39w== ganesh.mahalingam@intel.com_20181005_verticals
+runcmd:
+  - [ls, -l, /]
+  - [cat, /etc/group]
+packages:
+  - openssh
+  - python3
+package_update: true
+package_upgrade: true
+chpasswd:
+  - list: |
+      ubuntu:buildmach
+  - expire: false
